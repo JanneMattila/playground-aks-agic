@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demos-ingress
+  namespace: demos
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+  - host: thingy.xyz
+    http:
+      paths:
+      - backend:
+          service:
+            name: webapp-network-tester-demo
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
