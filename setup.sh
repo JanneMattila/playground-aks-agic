@@ -5,9 +5,12 @@ subscriptionName="AzureDev"
 aadAdminGroupContains="janne''s"
 
 aksName="myaksagic"
-acrName="myacr0000010"
+acrName="myacragic0000010"
 workspaceName="myagicworkspace"
 vnetName="myaksagic-vnet"
+subnetAks="AksSubnet"
+subnetAppGw="AppGwSubnet"
+appGwName="myagic"
 identityName="myaksagic"
 resourceGroupName="rg-myaksagic"
 location="northeurope"
@@ -28,11 +31,20 @@ echo $aadAdmingGroup
 workspaceid=$(az monitor log-analytics workspace create -g $resourceGroupName -n $workspaceName --query id -o tsv)
 echo $workspaceid
 
-subnetid=$(az network vnet create -g $resourceGroupName --name $vnetName \
+vnetid=$(az network vnet create -g $resourceGroupName --name $vnetName \
   --address-prefix 10.0.0.0/8 \
-  --subnet-name AksSubnet --subnet-prefix 10.2.0.0/24 \
-  --query newVNet.subnets[0].id -o tsv)
-echo $subnetid
+  --query newVNet.id -o tsv)
+echo $vnetid
+
+subnetaksid=$(az network vnet subnet create -g $resourceGroupName --vnet-name $vnetName \
+  --name $subnetAks --address-prefixes 10.2.0.0/24 \
+  --query id -o tsv)
+echo $subnetaksid
+
+subnetappgwsid=$(az network vnet subnet create -g $resourceGroupName --vnet-name $vnetName \
+  --name $subnetAppGw --address-prefixes 10.3.0.0/24 \
+  --query id -o tsv)
+echo $subnetappgwsid
 
 identityid=$(az identity create --name $identityName --resource-group $resourceGroupName --query id -o tsv)
 echo $identityid
@@ -40,11 +52,14 @@ echo $identityid
 az aks get-versions -l $location -o table
 
 az aks create -g $resourceGroupName -n $aksName \
- --zones "1" --max-pods 150 --network-plugin kubenet \
+ --zones "1" --max-pods 150 --network-plugin azure \
  --node-count 1 --enable-cluster-autoscaler --min-count 1 --max-count 3 \
  --node-osdisk-type Ephemeral \
  --node-vm-size Standard_D8ds_v4 \
  --kubernetes-version 1.21.2 \
+ --enable-addons ingress-appgw \
+ --appgw-name $appGwName \
+ --appgw-subnet-id $subnetappgwsid \
  --enable-addons azure-policy \
  --enable-addons monitoring \
  --enable-aad \
@@ -54,7 +69,7 @@ az aks create -g $resourceGroupName -n $aksName \
  --attach-acr $acrid \
  --enable-private-cluster \
  --private-dns-zone System \
- --vnet-subnet-id $subnetid \
+ --vnet-subnet-id $subnetaksid \
  --assign-identity $identityid \
  -o table 
 
