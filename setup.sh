@@ -22,6 +22,12 @@ az account set --subscription $subscriptionName -o table
 subscriptionID=$(az account show -o tsv --query id)
 az group create -l $location -n $resourceGroupName -o table
 
+# Install the aks-preview extension
+az extension add --name aks-preview
+
+# Update the extension to make sure you have the latest version installed
+az extension update --name aks-preview
+
 acrid=$(az acr create -l $location -g $resourceGroupName -n $acrName --sku Basic --query id -o tsv)
 echo $acrid
 
@@ -51,6 +57,9 @@ echo $identityid
 
 az aks get-versions -l $location -o table
 
+# Note about private clusters:
+# https://docs.microsoft.com/en-us/azure/aks/private-clusters
+
 az aks create -g $resourceGroupName -n $aksName \
  --zones "1" --max-pods 150 --network-plugin azure \
  --node-count 1 --enable-cluster-autoscaler --min-count 1 --max-count 3 \
@@ -67,11 +76,26 @@ az aks create -g $resourceGroupName -n $aksName \
  --aad-admin-group-object-ids $aadAdmingGroup \
  --workspace-resource-id $workspaceid \
  --attach-acr $acrid \
+ --load-balancer-sku standard \
  --enable-private-cluster \
- --private-dns-zone System \
+ --private-dns-zone None \
  --vnet-subnet-id $subnetaksid \
  --assign-identity $identityid \
  -o table 
+
+###################################################################
+# Note: for public cluster you need to authorize your ip to use api
+myip=$(curl --no-progress-meter https://api.ipify.org)
+echo $myip
+
+# Enable current ip
+az aks update -g $resourceGroupName -n $aksName \
+  --api-server-authorized-ip-ranges $myip
+
+# Disable all authorized ip ranges
+az aks update -g $resourceGroupName -n $aksName \
+  --api-server-authorized-ip-ranges ""
+###################################################################
 
 sudo az aks install-cli
 
