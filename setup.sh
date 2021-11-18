@@ -52,10 +52,10 @@ subnetaksid=$(az network vnet subnet create -g $resourceGroupName --vnet-name $v
   --query id -o tsv)
 echo $subnetaksid
 
-subnetappgwsid=$(az network vnet subnet create -g $resourceGroupName --vnet-name $vnetName \
+subnetappgwid=$(az network vnet subnet create -g $resourceGroupName --vnet-name $vnetName \
   --name $subnetAppGw --address-prefixes 10.3.0.0/24 \
   --query id -o tsv)
-echo $subnetappgwsid
+echo $subnetappgwid
 
 identityid=$(az identity create --name $identityName --resource-group $resourceGroupName --query id -o tsv)
 echo $identityid
@@ -66,8 +66,8 @@ az aks get-versions -l $location -o table
 # https://docs.microsoft.com/en-us/azure/aks/private-clusters
 
 # For private cluster add these:
-#  --enable-private-cluster \ # aks-preview
-#  --private-dns-zone None \ # aks-preview
+#  --enable-private-cluster
+#  --private-dns-zone None
 
 az aks create -g $resourceGroupName -n $aksName \
  --zones "1" --max-pods 150 --network-plugin azure \
@@ -77,7 +77,7 @@ az aks create -g $resourceGroupName -n $aksName \
  --kubernetes-version 1.21.2 \
  --enable-addons ingress-appgw,monitoring,azure-policy \
  --appgw-name $appGwName \
- --appgw-subnet-id $subnetappgwsid \
+ --appgw-subnet-id $subnetappgwid \
  --enable-aad \
  --enable-managed-identity \
  --aad-admin-group-object-ids $aadAdmingGroup \
@@ -97,7 +97,7 @@ echo $myip
 az aks update -g $resourceGroupName -n $aksName \
   --api-server-authorized-ip-ranges $myip
 
-# Disable all authorized ip ranges
+# Clear all authorized ip ranges
 az aks update -g $resourceGroupName -n $aksName \
   --api-server-authorized-ip-ranges ""
 ###################################################################
