@@ -22,11 +22,16 @@ az account set --subscription $subscriptionName -o table
 subscriptionID=$(az account show -o tsv --query id)
 az group create -l $location -n $resourceGroupName -o table
 
-# Install the aks-preview extension
-az extension add --name aks-preview
+# Enable feature
+az feature register --name AKS-IngressApplicationGatewayAddon --namespace Microsoft.ContainerService
+az provider register -n Microsoft.ContainerService
+az feature list --namespace Microsoft.ContainerService -o table | grep Addon
 
-# Update the extension to make sure you have the latest version installed
-az extension update --name aks-preview
+# Prepare extensions and providers
+az extension add --upgrade --yes --name aks-preview
+
+# Remove extension in case conflicting previews
+az extension remove --name aks-preview
 
 acrid=$(az acr create -l $location -g $resourceGroupName -n $acrName --sku Basic --query id -o tsv)
 echo $acrid
@@ -60,25 +65,25 @@ az aks get-versions -l $location -o table
 # Note about private clusters:
 # https://docs.microsoft.com/en-us/azure/aks/private-clusters
 
+# For private cluster add these:
+#  --enable-private-cluster \ # aks-preview
+#  --private-dns-zone None \ # aks-preview
+
 az aks create -g $resourceGroupName -n $aksName \
  --zones "1" --max-pods 150 --network-plugin azure \
  --node-count 1 --enable-cluster-autoscaler --min-count 1 --max-count 3 \
  --node-osdisk-type Ephemeral \
  --node-vm-size Standard_D8ds_v4 \
  --kubernetes-version 1.21.2 \
- --enable-addons ingress-appgw \
+ --enable-addons ingress-appgw,monitoring,azure-policy \
  --appgw-name $appGwName \
  --appgw-subnet-id $subnetappgwsid \
- --enable-addons azure-policy \
- --enable-addons monitoring \
  --enable-aad \
  --enable-managed-identity \
  --aad-admin-group-object-ids $aadAdmingGroup \
  --workspace-resource-id $workspaceid \
  --attach-acr $acrid \
  --load-balancer-sku standard \
- --enable-private-cluster \
- --private-dns-zone None \
  --vnet-subnet-id $subnetaksid \
  --assign-identity $identityid \
  -o table 
