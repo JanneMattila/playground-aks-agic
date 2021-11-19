@@ -123,5 +123,18 @@ echo $ingressip
 curl $ingressip
 # -> <html><body>Hello there!</body></html>
 
+BODY='IPLOOKUP bing.com'
+curl -X POST --data "$BODY" -H "Content-Type: text/plain" "http://$ingressip/api/commands"
+# IP: 13.107.21.200
+# IP: 204.79.197.200
+# IP: 2620:1ec:c11::200
+
+BODY='INFO ENV'
+curl -X POST --data "$BODY" -H "Content-Type: text/plain" "http://$ingressip/api/commands"
+# ...
+# ENV: WEBAPP_NETWORK_TESTER_DEMO_SERVICE_HOST: 10.0.221.201
+# ENV: WEBAPP_NETWORK_TESTER_DEMO_PORT: tcp://10.0.221.201:80
+# ENV: DOTNET_VERSION: 6.0.0
+
 # Wipe out the resources
 az group delete --name $resourceGroupName -y
