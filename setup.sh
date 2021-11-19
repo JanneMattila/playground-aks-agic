@@ -136,5 +136,32 @@ curl -X POST --data "$BODY" -H "Content-Type: text/plain" "http://$ingressip/api
 # ENV: WEBAPP_NETWORK_TESTER_DEMO_PORT: tcp://10.0.221.201:80
 # ENV: DOTNET_VERSION: 6.0.0
 
+##############
+# TLS examples
+##############
+# Create/get yourself a certificate
+# - You can use Let's Encrypt with instructions from here:
+#   https://github.com/JanneMattila/some-questions-and-some-answers/blob/master/q%26a/use_ssl_certificates.md
+#   ->
+domainName="jannemattila.com"
+sudo cp "/etc/letsencrypt/live/$domainName/privkey.pem" .
+sudo cp "/etc/letsencrypt/live/$domainName/fullchain.pem" .
+
+kubectl create secret tls tls-secret --key privkey.pem --cert fullchain.pem -n demos --dry-run=client -o yaml > tls-secret.yaml
+
+kubectl apply -f tls-secret.yaml
+
+kubectl apply -f ingress-tls.yaml
+kubectl get ingress -n demos
+kubectl describe ingress demos-ingress -n demos
+
+# Deploy DNS e.g., "agic.jannemattila.com" -> $ingressip
+address="agic.$domainName"
+echo $address
+
+# Try with HTTPS
+BODY='IPLOOKUP bing.com'
+curl -X POST --data "$BODY" -H "Content-Type: text/plain" "https://$address/api/commands"
+
 # Wipe out the resources
 az group delete --name $resourceGroupName -y

@@ -10,6 +10,10 @@
 *.userosscache
 *.sln.docstates
 
+*.pem
+*.pfx
+tls-secret.*
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
