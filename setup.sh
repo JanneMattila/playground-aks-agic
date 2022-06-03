@@ -19,24 +19,42 @@ location="northeurope"
 az login -o table
 az account set --subscription $subscriptionName -o table
 
-subscriptionID=$(az account show -o tsv --query id)
-az group create -l $location -n $resourceGroupName -o table
+#########################
+#  ____
+# |  _ \ _ __ ___ _ __
+# | |_) | '__/ _ \ '_ \
+# |  __/| | |  __/ |_) |
+# |_|   |_|  \___| .__/
+#                |_|
+# extensions and features 
+#########################
 
 # Enable feature
 az feature register --name AKS-IngressApplicationGatewayAddon --namespace Microsoft.ContainerService
 az provider register -n Microsoft.ContainerService
-az feature list --namespace Microsoft.ContainerService -o table | grep Addon
+az feature list --namespace Microsoft.ContainerService -o table | grep -i Addon
 
 # Prepare extensions and providers
 az extension add --upgrade --yes --name aks-preview
 
 # Remove extension in case conflicting previews
-az extension remove --name aks-preview
+# az extension remove --name aks-preview
+
+#############################
+#  ____  _             _
+# / ___|| |_ __ _ _ __| |_
+# \___ \| __/ _` | '__| __|
+#  ___) | || (_| | |  | |_
+# |____/ \__\__,_|_|   \__|
+# deployment
+#############################
+
+az group create -l $location -n $resourceGroupName -o table
 
 acrid=$(az acr create -l $location -g $resourceGroupName -n $acrName --sku Basic --query id -o tsv)
 echo $acrid
 
-aadAdmingGroup=$(az ad group list --display-name $aadAdminGroupContains --query [].objectId -o tsv)
+aadAdmingGroup=$(az ad group list --display-name $aadAdminGroupContains --query [].id -o tsv)
 echo $aadAdmingGroup
 
 workspaceid=$(az monitor log-analytics workspace create -g $resourceGroupName -n $workspaceName --query id -o tsv)
@@ -68,18 +86,17 @@ az aks get-versions -l $location -o table
 # For private cluster add these:
 #  --enable-private-cluster
 #  --private-dns-zone None
-
 az aks create -g $resourceGroupName -n $aksName \
  --zones "1" --max-pods 150 --network-plugin azure \
  --node-count 1 --enable-cluster-autoscaler --min-count 1 --max-count 3 \
  --node-osdisk-type Ephemeral \
  --node-vm-size Standard_D8ds_v4 \
- --kubernetes-version 1.21.2 \
- --enable-addons ingress-appgw,monitoring,azure-policy \
+ --kubernetes-version 1.23.5 \
+ --enable-addons ingress-appgw,monitoring,azure-policy,azure-keyvault-secrets-provider \
  --appgw-name $appGwName \
  --appgw-subnet-id $subnetappgwid \
  --enable-aad \
- --enable-managed-identity \
+  --enable-managed-identity \
  --aad-admin-group-object-ids $aadAdmingGroup \
  --workspace-resource-id $workspaceid \
  --attach-acr $acrid \
@@ -107,6 +124,12 @@ sudo az aks install-cli
 az aks get-credentials -n $aksName -g $resourceGroupName --overwrite-existing
 
 kubectl get nodes
+
+# For Private AKS clusters:
+az aks command invoke -n $aksName -g $resourceGroupName --command "kubectl apply -f namespace.yaml" --file namespace.yaml
+az aks command invoke -n $aksName -g $resourceGroupName --command "kubectl apply -f deployment.yaml" --file deployment.yaml
+az aks command invoke -n $aksName -g $resourceGroupName --command "kubectl apply -f service.yaml" --file service.yaml
+az aks command invoke -n $aksName -g $resourceGroupName --command "kubectl apply -f ingress.yaml" --file ingress.yaml
 
 kubectl apply -f namespace.yaml
 kubectl apply -f deployment.yaml
@@ -163,5 +186,14 @@ echo $address
 BODY='IPLOOKUP bing.com'
 curl -X POST --data "$BODY" -H "Content-Type: text/plain" "https://$address/api/commands"
 
-# Wipe out the resources
+#############################
+# __        ___
+# \ \      / (_)_ __   ___
+#  \ \ /\ / /| | '_ \ / _ \
+#   \ V  V / | | |_) |  __/
+#    \_/\_/  |_| .__/ \___|
+#              |_|
+# out the resources
+#############################
+
 az group delete --name $resourceGroupName -y

@@ -14,9 +14,9 @@ spec:
         app: webapp-network-tester-demo
     spec:
       nodeSelector:
-        "beta.kubernetes.io/os": linux
+        kubernetes.io/os: linux
       containers:
-      - image: jannemattila/webapp-network-tester:1.0.41
+      - image: jannemattila/webapp-network-tester:1.0.50
         imagePullPolicy: Always
         name: webapp-network-tester-demo
         resources:
