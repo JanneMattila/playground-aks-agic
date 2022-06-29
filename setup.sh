@@ -13,7 +13,7 @@ subnetAppGw="AppGwSubnet"
 appGwName="myagic"
 identityName="myaksagic"
 resourceGroupName="rg-myaksagic"
-location="northeurope"
+location="swedencentral"
 
 # Login and set correct context
 az login -o table
@@ -122,6 +122,7 @@ az aks update -g $resourceGroupName -n $aksName \
 sudo az aks install-cli
 
 az aks get-credentials -n $aksName -g $resourceGroupName --overwrite-existing
+kubelogin convert-kubeconfig -l azurecli
 
 kubectl get nodes
 
@@ -138,6 +139,7 @@ kubectl apply -f ingress.yaml
 
 kubectl get service -n demos
 kubectl get ingress -n demos
+kubectl get pods -A
 
 kubectl get ingress -n demos -o json
 ingressip=$(kubectl get ingress -n demos -o jsonpath="{.items[0].status.loadBalancer.ingress[0].ip}")
